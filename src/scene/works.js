@@ -28,7 +28,7 @@ export function buildWorks(THREE, M, sign) {
   const g = new THREE.Group(); g.name = 'weighbridgeYard';
   // yard + weighbridge
   const yard = add(g, new THREE.PlaneGeometry(160, 70), M.concrete, 4, 0, -10, 'yard'); yard.rotation.x = -Math.PI / 2; yard.castShadow = false;
-  M.concrete.map.repeat.set(20, 9);
+  { const uv = yard.geometry.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 40, uv.getY(i) * 17.5); }
   box(g, 18.5, 0.06, 3.4, M.plate, 7.0, 0.0, 0, 'weighDeck');
   M.plate.map.repeat.set(1, 1);
   [-1, 1].forEach(s => {
@@ -63,14 +63,14 @@ export function buildWorks(THREE, M, sign) {
   [z0, z1].forEach(z => box(crane, xs[1] - xs[0], 0.5, 0.5, M.craneYellow, (xs[0] + xs[1]) / 2, H + 0.1, z, 'endTie'));
   [z0, z1].forEach(z => box(crane, xs[1] - xs[0], 0.06, 0.06, M.chassis, (xs[0] + xs[1]) / 2, 0.0, z));
   // trolley bridge (moves in Z)
-  const trolley = new THREE.Group(); trolley.name = 'trolley'; crane.add(trolley);
+  const trolley = new THREE.Group(); trolley.name = 'trolley'; trolley.userData.dyn = true; crane.add(trolley);
   box(trolley, xs[1] - xs[0] + 0.8, 0.55, 0.9, M.craneBlue, (xs[0] + xs[1]) / 2, H + 0.85, 0, 'trolleyBeam');
   box(trolley, 2.4, 1.1, 1.4, M.craneBlue, (xs[0] + xs[1]) / 2, H + 1.4, 0, 'hoist');
   box(trolley, 1.0, 0.8, 0.9, M.craneYellow, (xs[0] + xs[1]) / 2 + 1.8, H + 1.3, 0, 'motor');
   // cables + spreader
   const cableGeo = new THREE.CylinderGeometry(0.018, 0.018, 1, 6); cableGeo.translate(0, -0.5, 0);
-  const cables = [2.6, 9.6].map(x => { const c = add(trolley, cableGeo, M.steelCable, x, H + 0.5, 0); return c; });
-  const hook = new THREE.Group(); hook.name = 'spreader'; trolley.add(hook);
+  const cables = [2.6, 9.6].map(x => { const c = add(trolley, cableGeo, M.steelCable, x, H + 0.5, 0); c.userData.dyn = true; return c; });
+  const hook = new THREE.Group(); hook.name = 'spreader'; hook.userData.dyn = true; trolley.add(hook);
   box(hook, 8.6, 0.32, 0.26, M.craneYellow, 6.1, 0.35, 0, 'spreaderBeam');
   [2.6, 9.6].forEach(x => { box(hook, 0.35, 0.5, 0.3, M.chassis, x, 0.7, 0, 'sheave'); });
   const slingGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.62, 5);
@@ -87,5 +87,16 @@ export function buildWorks(THREE, M, sign) {
   // lamp mast + misc yard props
   box(g, 0.25, 14, 0.25, M.pole, -12, 7, 4, 'mast');
   box(g, 2.2, 0.4, 0.6, M.chassis, -12, 14, 4);
+  // steel stockyard in the background: stacked bundles, coils and plates (sells the "steel plant" story)
+  const coilGeo = new THREE.TorusGeometry(0.75, 0.38, 14, 28);
+  for (let i = 0; i < 7; i++) { const c = add(g, coilGeo, M.rebar, -26 + i * 2.1, 1.13, -22 - (i % 2) * 0.4, 'coil'); c.rotation.y = Math.PI / 2; }
+  for (let i = 0; i < 5; i++) for (let t = 0; t < 1 + (i % 3); t++) box(g, 12, 0.5, 2.2, M.rebar, 30 + (i % 2) * 1.5, 0.25 + t * 0.52, -20 - i * 3, 'barStack');
+  for (let t = 0; t < 6; t++) box(g, 6, 0.08, 2.4, M.trailer, -24, 0.04 + t * 0.09, -32, 'plateStack');
+  // perimeter wall + mill shed silhouette
+  box(g, 160, 2.6, 0.3, M.paintWhite, 4, 1.3, -44, 'wall');
+  const shed = box(g, 70, 20, 30, M.corrugated, 10, 10, -66, 'millShed');
+  { const uv = shed.geometry.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 35, uv.getY(i) * 10); }
+  box(g, 71, 0.6, 31, M.trailer, 10, 20.3, -66);
+  [0, 1].forEach(i => add(g, new THREE.CylinderGeometry(1.4, 1.8, 34, 20), M.paintWhite, 30 + i * 8, 17, -78, 'chimney'));
   return { group: g, setCrane, H, disp, off };
 }

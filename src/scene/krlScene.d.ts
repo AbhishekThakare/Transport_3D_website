@@ -1,6 +1,6 @@
 export interface KrlHud {
   kg: number; km: number; fade: number; p: number; ready: boolean;
-  scene?: string; setup?: number; unloaded?: number;
+  scene?: string; setup?: number; unloaded?: number; progress?: number;
 }
 export interface KrlScene {
   hud: KrlHud;

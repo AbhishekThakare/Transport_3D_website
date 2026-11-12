@@ -21,7 +21,7 @@ export default function Nav() {
   const close = () => setOpen(false);
 
   return (
-    <nav className={`nav${open ? ' open' : ''}`}>
+    <nav className={`nav${open ? ' open' : ''}${path === '/' ? ' over-canvas' : ''}`}>
       <Link href="/" className="brand" onClick={close}>
         <img src="/assets/logo-mark-light.png" alt="Krishna Roadlines logo" />
         <span>KRISHNA ROADLINES</span>

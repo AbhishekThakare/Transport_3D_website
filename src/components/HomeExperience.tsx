@@ -63,7 +63,10 @@ export default function HomeExperience() {
 
     import('@/scene/krlScene').then(({ createKrlScene }) => {
       if (disposed || !host.current) return;
-      try { scene = createKrlScene(host.current); }
+      try {
+        scene = createKrlScene(host.current);
+        if (process.env.NODE_ENV !== 'production') (window as unknown as { __krl: unknown }).__krl = scene;
+      }
       catch (e) { console.error('krl-scene', e); if (loader.current) loader.current.textContent = '3D SCENE UNAVAILABLE ON THIS DEVICE'; }
     });
 
@@ -105,6 +108,7 @@ export default function HomeExperience() {
         S['--fade'] = hud.fade || 0;
         if (kgRef.current) kgRef.current.textContent = (hud.kg || 0).toLocaleString('en-IN');
         if (kmRef.current) kmRef.current.textContent = String(hud.km || 0);
+        if (!loaded && loader.current) loader.current.style.setProperty('--load', String(hud.ready ? 1 : (hud.progress || 0) * 0.95));
         if (hud.ready && loader.current && !loaded) { loaded = true; loader.current.style.opacity = '0'; }
       }
       for (const key in S) {
@@ -183,7 +187,7 @@ export default function HomeExperience() {
             </div>
           </div>
 
-          <div ref={loader} className="loader">LOADING 3D SCENE…</div>
+          <div ref={loader} className="loader"><span>LOADING 3D SCENE…</span><div className="loader-bar"><i /></div></div>
           <div className="layer hero-shade" />
 
           {/* hero */}

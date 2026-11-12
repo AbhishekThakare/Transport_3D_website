@@ -23,7 +23,7 @@ export function buildSite(THREE, M, sign) {
   // cones around zone
   const coneGeo = new THREE.ConeGeometry(0.17, 0.72, 24); const bandGeo = new THREE.CylinderGeometry(0.105, 0.125, 0.12, 24); const baseGeo = new THREE.BoxGeometry(0.42, 0.04, 0.42);
   const cones = [];
-  const cone = (x, z) => { const c = new THREE.Group(); c.position.set(x, 0, z); g.add(c); add(c, baseGeo, coneMat, 0, 0.02, 0); add(c, coneGeo, coneMat, 0, 0.4, 0); add(c, bandGeo, M.paintWhite, 0, 0.48, 0); cones.push(c); };
+  const cone = (x, z) => { const c = new THREE.Group(); c.userData.dyn = true; c.position.set(x, 0, z); g.add(c); add(c, baseGeo, coneMat, 0, 0.02, 0); add(c, coneGeo, coneMat, 0, 0.4, 0); add(c, bandGeo, M.paintWhite, 0, 0.48, 0); cones.push(c); };
   for (let x = zone.x0; x <= zone.x1 + 0.01; x += 2.375) { cone(x, zone.z1 + 0.35); cone(x, zone.z0 - 0.35); }
   for (let z = zone.z0 + 2.6; z < zone.z1; z += 2.6) { cone(zone.x0 - 0.35, z); cone(zone.x1 + 0.35, z); }
   // beacons on poles
@@ -44,8 +44,8 @@ export function buildSite(THREE, M, sign) {
     [-0.11, 0.11].forEach(o => { box(p, 0.15, 0.82, 0.17, work, 0, 0.47, o); box(p, 0.28, 0.1, 0.17, boot, 0.05, 0.05, o); });
     box(p, 0.26, 0.6, 0.44, vMat, 0, 1.18, 0);
     box(p, 0.27, 0.05, 0.45, reflect, 0, 1.05, 0); box(p, 0.27, 0.05, 0.45, reflect, 0, 1.3, 0);
-    const armL = new THREE.Group(); armL.position.set(0, 1.44, 0.28); p.add(armL); box(armL, 0.11, 0.62, 0.11, vMat, 0, -0.3, 0); box(armL, 0.09, 0.1, 0.09, skin, 0, -0.65, 0);
-    const armR = new THREE.Group(); armR.position.set(0, 1.44, -0.28); p.add(armR); box(armR, 0.11, 0.62, 0.11, vMat, 0, -0.3, 0); box(armR, 0.09, 0.1, 0.09, skin, 0, -0.65, 0);
+    const armL = new THREE.Group(); armL.userData.dyn = true; armL.position.set(0, 1.44, 0.28); p.add(armL); box(armL, 0.11, 0.62, 0.11, vMat, 0, -0.3, 0); box(armL, 0.09, 0.1, 0.09, skin, 0, -0.65, 0);
+    const armR = new THREE.Group(); armR.userData.dyn = true; armR.position.set(0, 1.44, -0.28); p.add(armR); box(armR, 0.11, 0.62, 0.11, vMat, 0, -0.3, 0); box(armR, 0.09, 0.1, 0.09, skin, 0, -0.65, 0);
     add(p, new THREE.SphereGeometry(0.115, 20, 14), skin, 0, 1.64, 0);
     const hat = add(p, new THREE.SphereGeometry(0.135, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), helmetW, 0, 1.68, 0);
     add(p, new THREE.CylinderGeometry(0.17, 0.17, 0.015, 20), helmetW, 0.02, 1.685, 0);
@@ -57,22 +57,22 @@ export function buildSite(THREE, M, sign) {
   const supervisor = person(16.8, 4.2, -2.4, vest);
   // wheel chocks (yellow wedges), positioned at trailer & drive axles (truck at x=0)
   const chockGeo = new THREE.BoxGeometry(0.38, 0.22, 0.3); const chocks = [];
-  [[1.05, 1.25], [1.05, -1.25], [10.95, 1.25], [10.95, -1.25]].forEach(([x, z]) => { const c = add(g, chockGeo, M.hazard, x, 0.11, z); c.rotation.z = 0.35; chocks.push(c); });
+  [[0.78, 1.25], [0.78, -1.25], [4.72, 1.25], [4.72, -1.25]].forEach(([x, z]) => { const c = add(g, chockGeo, M.hazard, x, 0.11, z); c.rotation.z = 0.35; c.userData.dyn = true; chocks.push(c); });
 
   // ---------- residential construction site ----------
-  const dirt = S({ name: 'siteGround', color: 0x8a7a64, roughness: 1 });
-  const gnd = add(g, new THREE.PlaneGeometry(220, 160), dirt, 6, -0.005, -20); gnd.rotation.x = -Math.PI / 2; gnd.castShadow = false;
-  const road = add(g, new THREE.PlaneGeometry(90, 6.5), M.concrete, 6, 0.0, 0); road.rotation.x = -Math.PI / 2; road.castShadow = false;
+  const tile = (geo, w, h, t) => { const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * w / t, uv.getY(i) * h / t); return geo; };
+  const gnd = add(g, tile(new THREE.PlaneGeometry(220, 160), 220, 160, 6), M.dirt, 6, -0.005, -20); gnd.rotation.x = -Math.PI / 2; gnd.castShadow = false;
+  const road = add(g, tile(new THREE.PlaneGeometry(90, 6.5), 90, 6.5, 4), M.concrete, 6, 0.0, 0); road.rotation.x = -Math.PI / 2; road.castShadow = false;
   [1.5, 6.1, 10.7].forEach(x => box(g, 0.2, 0.14, 2.4, M.timber, x, 0.07, -5.1));
   // building under construction (RCC frame, 7 floors, top floors open)
   const bld = new THREE.Group(); bld.position.set(6, 0, -30); g.add(bld);
   const conc = S({ name: 'freshConcrete', color: 0xb9b4aa, roughness: 0.95 });
-  const brick = S({ name: 'brick', color: 0x9c4a2e, roughness: 0.95 });
+  const brick = M.brick;
   const FH = 3.1, BW = 30, BD = 16;
   for (let f = 0; f <= 7; f++) {
     box(bld, BW, 0.25, BD, conc, 0, f * FH + 0.12, 0);
     if (f < 7) for (let ix = 0; ix <= 5; ix++) for (let iz = 0; iz <= 2; iz++) box(bld, 0.45, FH, 0.45, conc, -BW / 2 + 0.3 + ix * (BW - 0.6) / 5, f * FH + FH / 2, -BD / 2 + 0.3 + iz * (BD - 0.6) / 2);
-    if (f < 4) { box(bld, BW - 0.6, FH - 0.3, 0.25, brick, 0, f * FH + FH / 2 + 0.1, BD / 2 - 0.2); }
+    if (f < 4) { const w = box(bld, BW - 0.6, FH - 0.3, 0.25, brick, 0, f * FH + FH / 2 + 0.1, BD / 2 - 0.2); tile(w.geometry, BW - 0.6, FH - 0.3, 2); }
     if (f >= 4 && f < 7) for (let ix = 0; ix < 6; ix++) box(bld, 0.02, 1.1, 0.02, M.rebar, -BW / 2 + 0.3 + ix * 5.88, 7 * FH + 0.6, BD / 2 - 0.3);
   }
   for (let ix = 0; ix <= 5; ix++) for (let iz = 0; iz <= 2; iz++) for (let r = 0; r < 4; r++) box(bld, 0.025, 1.4, 0.025, M.rebar, -BW / 2 + 0.3 + ix * (BW - 0.6) / 5 + (r % 2 - 0.5) * 0.25, 7 * FH + 0.8, -BD / 2 + 0.3 + iz * (BD - 0.6) / 2 + (r > 1 ? 0.12 : -0.12));
@@ -109,11 +109,11 @@ export function buildSite(THREE, M, sign) {
   const tie1 = box(tc, 0.04, 0.04, 22, M.steelCable, 0, TH + 4.4, 10); tie1.rotation.x = 0.17;
   const tie2 = box(tc, 0.04, 0.04, 15, M.steelCable, 0, TH + 4.4, -7); tie2.rotation.x = -0.45;
   const sgnJ = new THREE.Mesh(new THREE.PlaneGeometry(6, 1.1), S({ map: sign([['KRISHNA HEIGHTS', 110, 160]], 1024, 256, '#e8a50c') })); sgnJ.position.set(0.7, TH + 0.4, -9); sgnJ.rotation.y = Math.PI / 2; tc.add(sgnJ);
-  const trolley = new THREE.Group(); tc.add(trolley);
+  const trolley = new THREE.Group(); trolley.userData.dyn = true; tc.add(trolley);
   box(trolley, 1.6, 0.5, 1.4, M.chassis, 0, TH + 0.15, 0);
   const cg = new THREE.CylinderGeometry(0.02, 0.02, 1, 6); cg.translate(0, -0.5, 0);
-  const cables = [-0.2, 0.2].map(x => add(trolley, cg, M.steelCable, x, TH - 0.1, 0));
-  const hook = new THREE.Group(); trolley.add(hook);
+  const cables = [-0.2, 0.2].map(x => { const c = add(trolley, cg, M.steelCable, x, TH - 0.1, 0); c.userData.dyn = true; return c; });
+  const hook = new THREE.Group(); hook.userData.dyn = true; trolley.add(hook);
   box(hook, 0.5, 0.6, 0.4, M.craneYellow, 0, 1.0, 0, 'hookBlock');
   box(hook, 8.6, 0.28, 0.22, M.craneYellow, 0, 0.35, 0, 'spreaderBeam');
   [[-1, 0.6], [1, 0.6]].forEach(([s]) => { const l = box(hook, 0.02, 1.0, 0.02, M.steelCable, s * 2.0, 0.72, 0); l.rotation.z = -s * 1.1; });

@@ -1,5 +1,5 @@
 // Materials + procedural canvas textures (real-world PBR-ish values)
-export function buildMats(THREE, renderer) {
+export function buildMats(THREE, renderer, pbr) {
   const aniso = renderer.capabilities.getMaxAnisotropy();
   const tex = (cv, rx = 1, ry = 1, srgb = true) => {
     const t = new THREE.CanvasTexture(cv);
@@ -17,30 +17,18 @@ export function buildMats(THREE, renderer) {
     }
   };
 
-  // asphalt
-  const ac = canvas(512, 512), ax = ac.getContext('2d');
-  noise(ax, 512, 512, '#2a2b2d', 0.22, 60000, 2);
-  for (let i = 0; i < 40; i++) { ax.fillStyle = `rgba(0,0,0,${Math.random() * 0.12})`; ax.beginPath(); ax.ellipse(Math.random() * 512, Math.random() * 512, 20 + Math.random() * 60, 6 + Math.random() * 20, Math.random() * 3, 0, 7); ax.fill(); }
-  const asphaltMap = tex(ac, 1, 1);
-  const arc = canvas(256, 256), arx = arc.getContext('2d'); noise(arx, 256, 256, '#d8d8d8', 0.4, 20000, 1.5);
-  const asphaltRough = tex(arc, 1, 1, false);
-
-  // road with lanes (4 lanes, texture spans road width along v)
+  // road lane markings (transparent overlay; the asphalt itself is a real PBR scan)
   const rc = canvas(1024, 512), rx = rc.getContext('2d');
-  rx.drawImage(ac, 0, 0, 512, 512); rx.drawImage(ac, 512, 0, 512, 512);
   rx.fillStyle = 'rgba(235,235,225,.85)';
   rx.fillRect(0, 24, 1024, 8); rx.fillRect(0, 480, 1024, 8);
   rx.fillStyle = 'rgba(240,200,60,.85)'; rx.fillRect(0, 250, 1024, 6); rx.fillRect(0, 260, 1024, 6);
   rx.fillStyle = 'rgba(235,235,225,.8)';
   for (let x = 0; x < 1024; x += 256) { rx.fillRect(x, 136, 150, 6); rx.fillRect(x, 372, 150, 6); }
+  // worn paint: punch random holes into the markings
+  rx.globalCompositeOperation = 'destination-out';
+  for (let i = 0; i < 9000; i++) { rx.fillStyle = `rgba(0,0,0,${Math.random() * 0.6})`; rx.fillRect(Math.random() * 1024, Math.random() * 512, 1 + Math.random() * 3, 1 + Math.random() * 2); }
+  rx.globalCompositeOperation = 'source-over';
   const roadMap = tex(rc, 1, 1); roadMap.wrapT = THREE.ClampToEdgeWrapping;
-
-  // concrete
-  const cc = canvas(512, 512), cx = cc.getContext('2d');
-  noise(cx, 512, 512, '#8d8a84', 0.18, 50000, 2);
-  cx.strokeStyle = 'rgba(40,40,40,.35)'; cx.lineWidth = 2;
-  for (let i = 0; i <= 512; i += 128) { cx.beginPath(); cx.moveTo(i, 0); cx.lineTo(i, 512); cx.stroke(); cx.beginPath(); cx.moveTo(0, i); cx.lineTo(512, i); cx.stroke(); }
-  const concreteMap = tex(cc, 1, 1);
 
   // checker plate
   const pc = canvas(256, 256), px = pc.getContext('2d');
@@ -96,14 +84,15 @@ export function buildMats(THREE, renderer) {
   const S = (o) => new THREE.MeshStandardMaterial(o);
   const P = (o) => new THREE.MeshPhysicalMaterial(o);
   const M = {
-    asphalt: S({ name: 'asphalt', map: asphaltMap, roughnessMap: asphaltRough, roughness: 0.95, metalness: 0 }),
-    road: S({ name: 'road', map: roadMap, roughness: 0.9, metalness: 0 }),
-    concrete: S({ name: 'concrete', map: concreteMap, roughness: 0.9 }),
+    asphalt: S({ name: 'asphalt', roughness: 1, metalness: 0 }),
+    road: S({ name: 'road', roughness: 1, metalness: 0 }),
+    roadLines: S({ name: 'roadLines', map: roadMap, transparent: true, depthWrite: false, roughness: 0.75, polygonOffset: true, polygonOffsetFactor: -2 }),
+    concrete: S({ name: 'concrete', roughness: 1 }),
     plate: S({ name: 'checkerPlate', map: plateMap, roughness: 0.55, metalness: 0.75 }),
-    dirt: S({ name: 'dirt', color: 0x6b5e4d, roughness: 1 }),
+    dirt: S({ name: 'dirt', roughness: 1 }),
     cabPaint: P({ name: 'cabPaint', color: 0xb8bcc2, roughness: 0.32, metalness: 0.35, clearcoat: 1, clearcoatRoughness: 0.08 }),
     cabAccent: P({ name: 'cabAccent', color: 0xd2621a, roughness: 0.35, metalness: 0.2, clearcoat: 1, clearcoatRoughness: 0.1 }),
-    glass: P({ name: 'glass', color: 0x0b1116, roughness: 0.04, metalness: 0.35, clearcoat: 1 }),
+    glass: P({ name: 'glass', color: 0x10161b, roughness: 0.02, metalness: 0.1, clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 1.6 }),
     chrome: S({ name: 'chrome', color: 0xe8e8e8, roughness: 0.08, metalness: 1 }),
     alu: S({ name: 'aluminium', color: 0xc9ccd0, roughness: 0.28, metalness: 1 }),
     chassis: S({ name: 'chassis', color: 0x16181b, roughness: 0.6, metalness: 0.5 }),
@@ -128,7 +117,9 @@ export function buildMats(THREE, renderer) {
     hull: S({ name: 'hull', color: 0x1d2a3a, roughness: 0.6, metalness: 0.4 }),
     hullRed: S({ name: 'hullRed', color: 0x7a1d17, roughness: 0.7, metalness: 0.2 }),
     water: P({ name: 'water', color: 0x0e2430, roughness: 0.08, metalness: 0.1, clearcoat: 1 }),
-    grass: S({ name: 'grass', color: 0x4c5a2e, roughness: 1 }),
+    grass: S({ name: 'grass', roughness: 1 }),
+    brick: S({ name: 'brick', roughness: 1 }),
+    corrugated: S({ name: 'corrugated', roughness: 1, metalness: 0.6 }),
     paintWhite: S({ name: 'paintWhite', color: 0xe9e9e4, roughness: 0.6 }),
     lampHead: S({ name: 'lampHead', color: 0xfff1d0, emissive: 0xffc070, emissiveIntensity: 3 }),
     pole: S({ name: 'pole', color: 0x8c9096, roughness: 0.4, metalness: 0.8 }),
@@ -136,5 +127,18 @@ export function buildMats(THREE, renderer) {
     guardrail: S({ name: 'guardrail', color: 0xb0b4b8, roughness: 0.3, metalness: 1 }),
     red: S({ name: 'red', color: 0xc21b17, roughness: 0.5 }),
   };
+  if (pbr) {
+    // Real-world scanned surfaces. Repeats are tuned per mesh by each set (see sets/works/site).
+    pbr.apply(M.asphalt, 'asphalt', [1, 1], { color: 0xb8b0a4 });
+    pbr.apply(M.road, 'asphalt', [1, 1], { color: 0x8c8c8c });
+    pbr.apply(M.concrete, 'concrete', [1, 1], { color: 0xd9d4cc });
+    pbr.apply(M.dirt, 'ground', [1, 1], { color: 0xc9b49a });
+    pbr.apply(M.grass, 'ground', [1, 1], { color: 0x9a8f72 });
+    pbr.apply(M.brick, 'brick', [1, 1], { normal: 1.2 });
+    pbr.apply(M.corrugated, 'corrugated', [1, 1], { metal: true, color: 0xc2c6ca });
+    // corrugation relief on painted containers, keeping the brand paint
+    pbr.apply(M.container, 'container', [3, 1], { map: false, normal: 1.4, roughness: 0.9, ao: 0.6 });
+    pbr.apply(M.containerEnd, 'container', [1, 1], { map: false, normal: 1.0, roughness: 0.9, ao: 0.6 });
+  }
   return { M, drawLED, signTex, tex, canvas };
 }
